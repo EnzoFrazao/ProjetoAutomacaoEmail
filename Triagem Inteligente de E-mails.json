@@ -274,6 +274,32 @@
     },
     {
       "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Novo E-mail Recebido').item.json.id }}",
+        "emailType": "text",
+        "message": "={{ $('Triagem com IA').item.json.output.resposta }}",
+        "options": {
+          "replyToSenderOnly": true
+        }
+      },
+      "id": "2d564afa-bac4-466b-89aa-c26ec1385de7",
+      "name": "Responder E-mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        192
+      ],
+      "webhookId": "770a2db4-c391-4e08-811c-35e535efb80f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qwl9vYPMn78k2ozq",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
         "operation": "markAsRead",
         "messageId": "={{ $('Novo E-mail Recebido').item.json.id }}"
       },
@@ -282,10 +308,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1024,
+        1248,
         192
       ],
-      "webhookId": "b66966ed-60d8-4a5f-9c92-52257866239e",
+      "webhookId": "31c734c0-b94b-47f6-8f37-4cab9b030e65",
       "credentials": {
         "gmailOAuth2": {
           "id": "qwl9vYPMn78k2ozq",
@@ -573,6 +599,17 @@
       "main": [
         [
           {
+            "node": "Responder E-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder E-mail": {
+      "main": [
+        [
+          {
             "node": "Marcar como Lido",
             "type": "main",
             "index": 0
@@ -584,7 +621,7 @@
       "main": [
         [
           {
-            "node": "Marcar como Lido",
+            "node": "Responder E-mail",
             "type": "main",
             "index": 0
           }
@@ -595,7 +632,7 @@
       "main": [
         [
           {
-            "node": "Marcar como Lido",
+            "node": "Responder E-mail",
             "type": "main",
             "index": 0
           }
@@ -609,7 +646,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "c653a365-6b7b-4844-a059-d13edf035ef2",
+  "versionId": "4c513bd6-ddd7-450f-b63e-bf333a77c252",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",
