@@ -1,0 +1,620 @@
+{
+  "name": "Triagem Inteligente de E-mails",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "id": "f9f6391d-a273-4b43-9ab5-d5f6498a01f2",
+      "name": "Novo E-mail Recebido",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        192
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qwl9vYPMn78k2ozq",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Assunto do e-mail: {{ $json.subject }}\n\nMensagem do cliente:\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Voce e um assistente de atendimento ao cliente. Analise a mensagem de e-mail recebida e faca duas coisas:\n\n1. CLASSIFIQUE a mensagem em exatamente uma destas tres categorias (use exatamente estas palavras, minusculas, sem acento): \"duvida\", \"reclamacao\" ou \"elogio\".\n2. GERE uma resposta adequada ao tom da categoria:\n- duvida: resposta informativa, clara e prestativa.\n- reclamacao: resposta empatica, que reconhece o problema e oferece solucao.\n- elogio: resposta calorosa e agradecida.\n\nResponda SEMPRE no formato JSON definido, com os campos \"classificacao\" e \"resposta\"."
+        }
+      },
+      "id": "010df8ed-369e-40c5-b396-598d1d0e6746",
+      "name": "Triagem com IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "675369e1-ccec-4596-84a7-8cf563f0a523",
+      "name": "Groq (LLaMA 3.3)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        240,
+        416
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "mnAv1zOY3Bp7SrGS",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"classificacao\": \"reclamacao\", \"resposta\": \"Lamentamos muito pelo ocorrido e vamos resolver o quanto antes.\" }"
+      },
+      "id": "90155f21-ed87-480d-8eb1-09112b18b4b2",
+      "name": "Formato JSON da Triagem",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.classificacao }}",
+                    "rightValue": "duvida",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Duvida"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.classificacao }}",
+                    "rightValue": "reclamacao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reclamacao"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.classificacao }}",
+                    "rightValue": "elogio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Elogio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4d2007b0-65d5-4a1f-b358-956f986da8ba",
+      "name": "Rotear por Categoria",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resposta Gerada": "={{ $('Triagem com IA').item.json.output.resposta }}",
+            "Classificacao": "={{ $('Triagem com IA').item.json.output.classificacao }}",
+            "Corpo": "={{ $('Novo E-mail Recebido').item.json.text }}",
+            "Assunto": "={{ $('Novo E-mail Recebido').item.json.subject }}",
+            "Remetente": "={{ $('Novo E-mail Recebido').item.json.from.value[0].address }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remetente",
+              "displayName": "Remetente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assunto",
+              "displayName": "Assunto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Corpo",
+              "displayName": "Corpo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Classificacao",
+              "displayName": "Classificacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resposta Gerada",
+              "displayName": "Resposta Gerada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "47018a42-228f-4221-88e5-40ac70dc2759",
+      "name": "Salvar Duvida",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gJabBsGTSA6EDY47",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Novo E-mail Recebido').item.json.id }}"
+      },
+      "id": "788e7d25-fcd8-4632-9b27-4946842cd3fb",
+      "name": "Marcar como Lido",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        192
+      ],
+      "webhookId": "b66966ed-60d8-4a5f-9c92-52257866239e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qwl9vYPMn78k2ozq",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resposta Gerada": "={{ $('Triagem com IA').item.json.output.resposta }}",
+            "Classificacao": "={{ $('Triagem com IA').item.json.output.classificacao }}",
+            "Corpo": "={{ $('Novo E-mail Recebido').item.json.text }}",
+            "Assunto": "={{ $('Novo E-mail Recebido').item.json.subject }}",
+            "Remetente": "={{ $('Novo E-mail Recebido').item.json.from.value[0].address }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remetente",
+              "displayName": "Remetente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assunto",
+              "displayName": "Assunto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Corpo",
+              "displayName": "Corpo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Classificacao",
+              "displayName": "Classificacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resposta Gerada",
+              "displayName": "Resposta Gerada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "21dd4a75-4c02-419a-a48f-783d7eeb5b2c",
+      "name": "Salvar Reclamacao",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        192
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gJabBsGTSA6EDY47",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XcfcK3mDljyTlux6XOlzYk9ZMQmHa0TWUMgfRek5Bcc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resposta Gerada": "={{ $('Triagem com IA').item.json.output.resposta }}",
+            "Classificacao": "={{ $('Triagem com IA').item.json.output.classificacao }}",
+            "Corpo": "={{ $('Novo E-mail Recebido').item.json.text }}",
+            "Assunto": "={{ $('Novo E-mail Recebido').item.json.subject }}",
+            "Remetente": "={{ $('Novo E-mail Recebido').item.json.from.value[0].address }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remetente",
+              "displayName": "Remetente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assunto",
+              "displayName": "Assunto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Corpo",
+              "displayName": "Corpo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Classificacao",
+              "displayName": "Classificacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resposta Gerada",
+              "displayName": "Resposta Gerada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ae2bcfe4-8918-439a-89c9-2c90cb955372",
+      "name": "Salvar Elogio",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gJabBsGTSA6EDY47",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Novo E-mail Recebido": {
+      "main": [
+        [
+          {
+            "node": "Triagem com IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triagem com IA": {
+      "main": [
+        [
+          {
+            "node": "Rotear por Categoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq (LLaMA 3.3)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Triagem com IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formato JSON da Triagem": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Triagem com IA",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rotear por Categoria": {
+      "main": [
+        [
+          {
+            "node": "Salvar Duvida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar Reclamacao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar Elogio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Duvida": {
+      "main": [
+        [
+          {
+            "node": "Marcar como Lido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Reclamacao": {
+      "main": [
+        [
+          {
+            "node": "Marcar como Lido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Elogio": {
+      "main": [
+        [
+          {
+            "node": "Marcar como Lido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "c653a365-6b7b-4844-a059-d13edf035ef2",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "de4f8306be22b4c98b294018b2b790f8e5da7bb55e1bd4dc13e30bd5427be036"
+  },
+  "id": "dKPECeuTyieeFkWC",
+  "tags": []
+}
